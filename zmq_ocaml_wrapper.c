@@ -122,7 +122,8 @@ value socket_new(value caml_context, value caml_socket_type)
     RAISE("socket failed (%s)", zmq_strerror(errno));
   }
 
-  CAMLreturn((value) socket);
+  value caml_socket = alloc_caml_handler(socket);
+  CAMLreturn(caml_socket);
 }
 
 extern CAMLprim
@@ -130,9 +131,12 @@ value socket_close(value caml_socket)
 {
   CAMLparam1(caml_socket);
   
-  void* socket = (void*) caml_socket;
-  if (-1 == zmq_close(socket)) {
-     RAISE("socket failed (%s)", zmq_strerror(errno));
+  void* socket = handler_val(caml_socket);
+  if (socket) {
+    if (-1 == zmq_close(socket)) {
+       RAISE("socket failed (%s)", zmq_strerror(errno));
+    }
+    free_caml_handler(caml_socket);
   }
 
   CAMLreturn(Val_unit);
@@ -143,7 +147,7 @@ value socket_bind(value caml_socket, value caml_endpoint)
 {
   CAMLparam2(caml_socket, caml_endpoint);
   
-  void* socket = (void*) caml_socket;
+  void* socket = get_handler(caml_socket);
   const char * endpoint = String_val(caml_endpoint);
   if (-1 == zmq_bind(socket, endpoint)) {
      RAISE("bind failed (%s)", zmq_strerror(errno));
@@ -157,7 +161,7 @@ value socket_connect(value caml_socket, value caml_endpoint)
 {
   CAMLparam2(caml_socket, caml_endpoint);
   
-  void* socket = (void*) caml_socket;
+  void* socket = get_handler(caml_socket);
   const char* endpoint = String_val(caml_endpoint);
   if (-1 == zmq_connect(socket, endpoint)) {
      RAISE("connect failed (%s)", zmq_strerror(errno));
@@ -171,7 +175,7 @@ value socket_unbind(value caml_socket, value caml_endpoint)
 {
   CAMLparam2(caml_socket, caml_endpoint);
   
-  void* socket = (void*) caml_socket;
+  void* socket = get_handler(caml_socket);
   const char * endpoint = String_val(caml_endpoint);
   if (-1 == zmq_unbind(socket, endpoint)) {
      RAISE("unbind failed (%s)", zmq_strerror(errno));
@@ -185,7 +189,7 @@ value socket_disconnect(value caml_socket, value caml_endpoint)
 {
   CAMLparam2(caml_socket, caml_endpoint);
   
-  void* socket = (void*) caml_socket;
+  void* socket = get_handler(caml_socket);
   const char* endpoint = String_val(caml_endpoint);
   if (-1 == zmq_disconnect(socket, endpoint)) {
      RAISE("disconnect failed (%s)", zmq_strerror(errno));
@@ -199,7 +203,7 @@ value socket_send(value caml_socket, value caml_msg)
 {
   CAMLparam2(caml_socket, caml_msg);
   
-  void* socket = (void*) caml_socket;
+  void* socket = get_handler(caml_socket);
   void* buf = String_val(caml_msg);
   size_t len = caml_string_length(caml_msg);
   if (-1 == zmq_send(socket, buf, len, 0)) {
@@ -215,7 +219,7 @@ value socket_receive(value caml_socket)
   CAMLparam1(caml_socket);
   CAMLlocal1(caml_msg);
 
-  void* socket = (void*) caml_socket;
+  void* socket = get_handler(caml_socket);
   zmq_msg_t msg;
   zmq_msg_init (&msg);
   if (-1 == zmq_recvmsg (socket, &msg, 0)) {
@@ -237,7 +241,7 @@ value socket_send_multiparts(value caml_socket, value caml_parts)
   CAMLparam2(caml_socket, caml_parts);
   CAMLlocal1(caml_msg);
   
-  void* socket = (void*) caml_socket;
+  void* socket = get_handler(caml_socket);
   while (caml_parts != Val_emptylist) {
     caml_msg = Field(caml_parts, 0);
     caml_parts = Field(caml_parts, 1);
@@ -260,13 +264,13 @@ value socket_receive_multiparts(value caml_socket)
   CAMLparam1(caml_socket);
   CAMLlocal3(caml_parts,caml_lastpart,caml_msg);
 
-  void* socket = (void*) caml_socket;
+  void* socket = get_handler(caml_socket);
 
   // We expect at least one part.
   caml_parts = caml_alloc(2,0); // (cons)
   caml_lastpart = caml_parts;
 
-  int64_t expect_more = 1;
+  int expect_more = 1;
   size_t more_size = sizeof(expect_more);
   while(expect_more) {
     zmq_msg_t msg;

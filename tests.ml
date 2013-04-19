@@ -15,3 +15,12 @@ let _ =
   Zmq.send push "Hello world!";
   assert (Zmq.receive pull = "Hello world!");
 
+  (* send and receive multi-parts messages *)
+  Zmq.send_multiparts push ["Hello"; "world"; "!"];
+  assert (Zmq.receive_multiparts pull = ["Hello"; "world"; "!"]);
+
+  (* close sockets and term *)
+  Zmq.close push;
+  Zmq.close pull;
+
+  Zmq.term ctx

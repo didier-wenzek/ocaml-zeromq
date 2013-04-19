@@ -39,3 +39,14 @@ Usage
     (* send and receive messages *)
     Zmq.send push "Hello world!";;
     Zmq.receive pull;;
+
+    (* send and receive multi-parts messages *)
+    Zmq.send_multiparts push ["Hello"; "world"; "!"];;
+    Zmq.receive_multiparts;;
+
+    (* close sockets and term *)
+    Zmq.close push;;
+    Zmq.close pull;;
+
+    Zmq.term ctx;;
+
