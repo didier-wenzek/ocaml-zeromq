@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-static
-int const SOCKET_TYPES[] = {
+/* Must be synchronized with Zmq.socket_type. */
+static int const SOCKET_TYPES[] = {
   ZMQ_REQ,
   ZMQ_REP,
   ZMQ_DEALER,
@@ -24,8 +24,8 @@ int const SOCKET_TYPES[] = {
   ZMQ_PAIR
 };
 
-static
-int const SOCKET_OPTS[] = {
+/* Must be synchronized with Zmq.sock_opt. */
+static int const SOCKET_OPTS[] = {
   ZMQ_TYPE,
   ZMQ_RCVMORE,
   ZMQ_SNDHWM,
@@ -57,9 +57,31 @@ int const SOCKET_OPTS[] = {
   ZMQ_TCP_ACCEPT_FILTER
 };
 
+/* Must be synchronized with Zmq.Error. */
+static int const ERROR_CODES[] = {
+    EINVAL,
+    EFAULT,
+    EMTHREAD,
+    ETERM,
+    ENODEV,
+    EADDRNOTAVAIL,
+    EADDRINUSE,
+    ENOCOMPATPROTO,
+    EPROTONOSUPPORT,
+    EAGAIN,
+    ENOTSUP,
+    EFSM,
+    ENOMEM,
+    EINTR
+};
+
+/* This must be the last value of Zmq.Error. */
+static int const EUNKNOWN = (sizeof ERROR_CODES) / (sizeof ERROR_CODES[0]);
+
 static
 void RAISE(const char *error, ...)
 {
+  CAMLlocalN(error_parameters, 2);
   static value *exception_handler = NULL;
   static char msg[100];
   va_list ap;
@@ -73,7 +95,20 @@ void RAISE(const char *error, ...)
       caml_failwith(msg);
     }
   }
-  caml_raise_with_string(*exception_handler, msg);
+
+  int err = zmq_errno();
+  int caml_errno = EUNKNOWN;
+  int i;
+  for (i = 0; i < EUNKNOWN; i++) {
+    if (err == ERROR_CODES[i]) {
+      caml_errno = i;
+      break;
+    }
+  }
+
+  error_parameters[0] = Val_int(caml_errno);
+  error_parameters[1] = caml_copy_string(msg);
+  caml_raise_with_args(*exception_handler, 2, error_parameters);
 }
 
 #define handler_val(v) *((void **) &Field(v, 0))

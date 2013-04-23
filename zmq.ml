@@ -1,3 +1,24 @@
+type error =
+    EINVAL
+  | EFAULT
+  | EMTHREAD
+  | ETERM
+  | ENODEV
+  | EADDRNOTAVAIL
+  | EADDRINUSE
+  | ENOCOMPATPROTO
+  | EPROTONOSUPPORT
+  | EAGAIN
+  | ENOTSUP
+  | EFSM
+  | ENOMEM
+  | EINTR
+  | EUNKNOWN
+
+exception Error of error * string
+let _ = 
+  Callback.register_exception "zmq.error" (Error(EUNKNOWN,"msg string"));
+
 type context
 type socket
 type socket_type =
@@ -12,10 +33,6 @@ type socket_type =
   | PUSH
   | PULL
   | PAIR
-
-exception Error of string
-let _ = 
-  Callback.register_exception "zmq.error" (Error "msg string");
 
 external context: int -> int -> context = "caml_zmq_init"
 external term: context -> unit = "caml_zmq_term"
@@ -69,8 +86,8 @@ type 'a socket_option = sock_opt * (sock_opt -> socket -> 'a) * (sock_opt -> soc
 let get_socket_option (opt, get, _) socket = get opt socket 
 let set_socket_option (opt, _, set) socket value = set opt socket value
 
-let write_only_option: sock_opt -> socket -> 'a = fun opt socket -> raise (Error "write only option")
-let read_only_option: sock_opt -> socket -> 'a -> unit = fun opt socket value -> raise (Error "read only option")
+let write_only_option: sock_opt -> socket -> 'a = fun opt socket -> raise (Error (EINVAL,"write only option"))
+let read_only_option: sock_opt -> socket -> 'a -> unit = fun opt socket value -> raise (Error (EINVAL,"read only option"))
 
 external get_int_option: sock_opt -> socket -> nativeint = "get_int_option"
 external get_int64_option: sock_opt -> socket -> int64 = "get_int64_option"

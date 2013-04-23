@@ -58,4 +58,21 @@ val tcp_keepalive_cnt: int socket_option
 val tcp_keepalive_intvl: int socket_option
 val tcp_accept_filter: string socket_option
 
-exception Error of string
+type error =
+    EINVAL
+  | EFAULT
+  | EMTHREAD
+  | ETERM
+  | ENODEV
+  | EADDRNOTAVAIL
+  | EADDRINUSE
+  | ENOCOMPATPROTO
+  | EPROTONOSUPPORT
+  | EAGAIN
+  | ENOTSUP
+  | EFSM
+  | ENOMEM
+  | EINTR
+  | EUNKNOWN
+
+exception Error of error * string
