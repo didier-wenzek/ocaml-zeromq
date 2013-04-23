@@ -1,7 +1,7 @@
 let _ =
   
   (* create a zmq context *)
-  let ctx = Zmq.init 1 in
+  let ctx = Zmq.init () in
 
   (* create sockets *)
   let push = Zmq.socket ctx Zmq.PUSH in

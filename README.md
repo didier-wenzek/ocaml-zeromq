@@ -26,7 +26,7 @@ Usage
     #load "zmq.cma";;
 
     (* create a zmq context *)
-    let ctx = Zmq.init 1;;
+    let ctx = Zmq.init ();;
 
     (* create sockets *)
     let push = Zmq.socket ctx Zmq.PUSH;;

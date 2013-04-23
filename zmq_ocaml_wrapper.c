@@ -24,17 +24,38 @@ int const SOCKET_TYPES[] = {
   ZMQ_PAIR
 };
 
-int decode_flags(value options, int const codes[])
-{
-  CAMLlocal1(head);
-  int flags = 0;
-  while (options!=Val_emptylist) {
-    head = Field(options, 0);
-    flags = flags | (codes[Int_val(head)]);
-    options = Field(options, 1);
-  }
-  return flags;
-}
+static
+int const SOCKET_OPTS[] = {
+  ZMQ_TYPE,
+  ZMQ_RCVMORE,
+  ZMQ_SNDHWM,
+  ZMQ_RCVHWM,
+  ZMQ_AFFINITY,
+  ZMQ_IDENTITY,
+  ZMQ_SUBSCRIBE,
+  ZMQ_UNSUBSCRIBE,
+  ZMQ_RATE,
+  ZMQ_RECOVERY_IVL,
+  ZMQ_SNDBUF,
+  ZMQ_RCVBUF,
+  ZMQ_LINGER,
+  ZMQ_RECONNECT_IVL,
+  ZMQ_RECONNECT_IVL_MAX,
+  ZMQ_BACKLOG,
+  ZMQ_MAXMSGSIZE,
+  ZMQ_MULTICAST_HOPS,
+  ZMQ_RCVTIMEO,
+  ZMQ_SNDTIMEO,
+  ZMQ_IPV4ONLY,
+  ZMQ_FD,
+  ZMQ_EVENTS,
+  ZMQ_LAST_ENDPOINT,
+  ZMQ_TCP_KEEPALIVE,
+  ZMQ_TCP_KEEPALIVE_IDLE,
+  ZMQ_TCP_KEEPALIVE_CNT,
+  ZMQ_TCP_KEEPALIVE_INTVL,
+  ZMQ_TCP_ACCEPT_FILTER
+};
 
 static
 void RAISE(const char *error, ...)
@@ -80,14 +101,18 @@ inline static void* get_handler(value caml_handler)
 }
 
 extern CAMLprim
-value caml_zmq_init(value io_threads)
+value caml_zmq_init(value caml_io_threads, value caml_max_sockets)
 {
-  CAMLparam1(io_threads);
+  CAMLparam2(caml_io_threads, caml_max_sockets);
+ 
+  int io_threads = Int_val(caml_io_threads);
+  int max_sockets = Int_val(caml_max_sockets);
 
-  void* zmq_context = zmq_ctx_new();
+  void* zmq_context = zmq_init(io_threads);
   if (! zmq_context) {
     RAISE("init failed");
   }
+  zmq_ctx_set(zmq_context, ZMQ_MAX_SOCKETS, max_sockets);
 
   value caml_context = alloc_caml_handler(zmq_context);
   CAMLreturn(caml_context);
@@ -297,3 +322,145 @@ value socket_receive_multiparts(value caml_socket)
 
   CAMLreturn(caml_parts);
 }
+
+extern CAMLprim
+value get_int_option(value caml_opt, value caml_socket)
+{
+  CAMLparam2(caml_opt, caml_socket);
+  
+  void* socket = get_handler(caml_socket);
+  int opt = SOCKET_OPTS[Int_val(caml_opt)];
+
+  int res;
+  size_t size = sizeof(res);
+  if (-1 == zmq_getsockopt(socket, opt, &res, &size)) {
+    RAISE("socket get option failed (%s)", zmq_strerror(errno));
+  }
+
+  value result = caml_copy_nativeint(res);
+  CAMLreturn(result);
+}
+
+extern CAMLprim
+value set_int_option(value caml_opt, value caml_socket, value caml_val)
+{
+  CAMLparam3(caml_opt, caml_socket, caml_val);
+  
+  void* socket = get_handler(caml_socket);
+  int opt = SOCKET_OPTS[Int_val(caml_opt)];
+  int val = Nativeint_val(caml_val);
+
+  size_t size = sizeof(val);
+  if (-1 == zmq_setsockopt(socket, opt, &val, size)) {
+    RAISE("socket set option failed (%s)", zmq_strerror(errno));
+  }
+
+  CAMLreturn(Val_unit);
+}
+
+extern CAMLprim
+value get_string_option(value caml_size, value caml_opt, value caml_socket)
+{
+  CAMLparam3(caml_size, caml_opt, caml_socket);
+  
+  void* socket = get_handler(caml_socket);
+  int opt = SOCKET_OPTS[Int_val(caml_opt)];
+  size_t size = Int_val(caml_size);
+
+  char res[size+1];
+  if (-1 == zmq_getsockopt(socket, opt, res, &size)) {
+    RAISE("socket get option failed (%s)", zmq_strerror(errno));
+  }
+
+  res[size] = 0;
+  value result = caml_copy_string(res);
+  CAMLreturn(result);
+}
+
+extern CAMLprim
+value set_string_option(value caml_opt, value caml_socket, value caml_val)
+{
+  CAMLparam3(caml_opt, caml_socket, caml_val);
+  
+  void* socket = get_handler(caml_socket);
+  int opt = SOCKET_OPTS[Int_val(caml_opt)];
+  char* val = String_val(caml_val);
+
+  size_t size = strlen(val);
+  if (-1 == zmq_setsockopt(socket, opt, val, size)) {
+    RAISE("socket set option failed (%s)", zmq_strerror(errno));
+  }
+
+  CAMLreturn(Val_unit);
+}
+
+extern CAMLprim
+value get_int64_option(value caml_opt, value caml_socket)
+{
+  CAMLparam2(caml_opt, caml_socket);
+  
+  void* socket = get_handler(caml_socket);
+  int opt = SOCKET_OPTS[Int_val(caml_opt)];
+
+  int64 res;
+  size_t size = sizeof(res);
+  if (-1 == zmq_getsockopt(socket, opt, &res, &size)) {
+    RAISE("socket get option failed (%s)", zmq_strerror(errno));
+  }
+
+  value result = caml_copy_int64(res);
+  CAMLreturn(result);
+}
+
+extern CAMLprim
+value set_int64_option(value caml_opt, value caml_socket, value caml_val)
+{
+  CAMLparam3(caml_opt, caml_socket, caml_val);
+  
+  void* socket = get_handler(caml_socket);
+  int opt = SOCKET_OPTS[Int_val(caml_opt)];
+  int64 val = Int64_val(caml_val);
+
+  size_t size = sizeof(val);
+  if (-1 == zmq_setsockopt(socket, opt, &val, size)) {
+    RAISE("socket set option failed (%s)", zmq_strerror(errno));
+  }
+
+  CAMLreturn(Val_unit);
+}
+
+extern CAMLprim
+value get_bool_option(value caml_opt, value caml_socket)
+{
+  CAMLparam2(caml_opt, caml_socket);
+  
+  void* socket = get_handler(caml_socket);
+  int opt = SOCKET_OPTS[Int_val(caml_opt)];
+
+  int res;
+  size_t size = sizeof(res);
+  if (-1 == zmq_getsockopt(socket, opt, &res, &size)) {
+    RAISE("socket get option failed (%s)", zmq_strerror(errno));
+  }
+
+  value result = res ? Val_true : Val_false;
+  CAMLreturn(result);
+}
+
+extern CAMLprim
+value set_bool_option(value caml_opt, value caml_socket, value caml_val)
+{
+  CAMLparam3(caml_opt, caml_socket, caml_val);
+  
+  void* socket = get_handler(caml_socket);
+  int opt = SOCKET_OPTS[Int_val(caml_opt)];
+  int val = Bool_val(caml_val);
+
+  size_t size = sizeof(val);
+  if (-1 == zmq_setsockopt(socket, opt, &val, size)) {
+    RAISE("socket set option failed (%s)", zmq_strerror(errno));
+  }
+
+  CAMLreturn(Val_unit);
+}
+
