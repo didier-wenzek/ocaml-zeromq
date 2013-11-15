@@ -13,6 +13,8 @@ type socket_type =
   | PULL
   | PAIR
 
+external version: unit -> int*int*int = "caml_zmq_version"
+
      val init: ?io_threads:int -> ?max_sockets:int -> unit -> context
 external term: context -> unit = "caml_zmq_term"
 

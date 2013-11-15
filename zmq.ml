@@ -34,6 +34,8 @@ type socket_type =
   | PULL
   | PAIR
 
+external version: unit -> int*int*int = "caml_zmq_version"
+
 external context: int -> int -> context = "caml_zmq_init"
 external term: context -> unit = "caml_zmq_term"
 let init ?(io_threads = 1) ?(max_sockets = 1024) () = context io_threads max_sockets

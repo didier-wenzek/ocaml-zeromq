@@ -1,6 +1,6 @@
 all: zmq.cmxa zmq.cma
 
-DESTDIR=`$(OCAMLC) -where`
+DESTDIR=`ocamlc -where`
 install: zmq.cmxa zmq.cma
 	cp zmq.mli zmq.cmi zmq.cmxa zmq.cma libzmq_ocaml.a dllzmq_ocaml.so $(DESTDIR)
 

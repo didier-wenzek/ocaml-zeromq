@@ -136,6 +136,22 @@ inline static void* get_handler(value caml_handler)
 }
 
 extern CAMLprim
+value caml_zmq_version(value unit) {
+    CAMLparam1 (unit);
+    CAMLlocal1 (version_tuple);
+
+    int major, minor, patch;
+    zmq_version(&major, &minor, &patch);
+
+    version_tuple = caml_alloc_tuple(3);
+    Store_field(version_tuple, 0, Val_int(major));
+    Store_field(version_tuple, 1, Val_int(minor));
+    Store_field(version_tuple, 2, Val_int(patch));
+
+    CAMLreturn (version_tuple);
+}
+
+extern CAMLprim
 value caml_zmq_init(value caml_io_threads, value caml_max_sockets)
 {
   CAMLparam2(caml_io_threads, caml_max_sockets);
