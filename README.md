@@ -2,7 +2,6 @@ OCaml bindings for ZeroMQ
 ====================================
 Merge of :
 * [pdhborges/ocaml-zmq](https://github.com/pdhborges/ocaml-zmq)
-* [pdhborges/ocaml-zmq3](https://github.com/pdhborges/ocaml-zmq3)
 * [bashi-bazouk/Caravan](https://github.com/bashi-bazouk/Caravan)
 
 Pre-requisites
@@ -42,7 +41,15 @@ Usage
 
     (* send and receive multi-parts messages *)
     Zmq.send_multiparts push ["Hello"; "world"; "!"];;
-    Zmq.receive_multiparts;;
+    Zmq.receive_multiparts pull;;
+
+    (* send and receive messages unless this would block  *)
+    assert (Zmq.send_nowait push "Hello world!");;
+    assert (Zmq.receive_nowait pull = Some "Hello world!");;
+    assert (Zmq.receive_nowait pull = None);;
+    assert (Zmq.send_multiparts_nowait push ["Hello"; "world"; "!"]);
+    assert (Zmq.receive_multiparts_nowait pull = ["Hello"; "world"; "!"]);
+    assert (Zmq.receive_multiparts_nowait pull = []);
 
     (* close sockets and term *)
     Zmq.close push;;

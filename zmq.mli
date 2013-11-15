@@ -32,6 +32,10 @@ external send: socket -> string -> unit = "socket_send"
 external receive: socket -> string = "socket_receive"
 external send_multiparts: socket -> string list -> unit = "socket_send_multiparts"
 external receive_multiparts: socket -> string list = "socket_receive_multiparts"
+external send_nowait: socket -> string -> bool = "socket_send_nowait"
+external receive_nowait: socket -> string option = "socket_receive_nowait"
+external send_multiparts_nowait: socket -> string list -> bool = "socket_send_multiparts_nowait"
+external receive_multiparts_nowait: socket -> string list = "socket_receive_multiparts_nowait"
 
 val subscribe:  socket -> string -> unit
 val unsubscribe:  socket -> string -> unit

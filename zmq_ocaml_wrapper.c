@@ -375,6 +375,137 @@ value socket_receive_multiparts(value caml_socket)
 }
 
 extern CAMLprim
+value socket_send_nowait(value caml_socket, value caml_msg)
+{
+  CAMLparam2(caml_socket, caml_msg);
+  CAMLlocal1(result);
+  
+  result = Val_false;
+  void* socket = get_handler(caml_socket);
+  void* buf = String_val(caml_msg);
+  size_t len = caml_string_length(caml_msg);
+  if (-1 == zmq_send(socket, buf, len, ZMQ_DONTWAIT)) {
+    if (errno != EAGAIN) {
+      RAISE("send failed (%s)", zmq_strerror(errno));
+    }
+  } else {
+    result = Val_true;
+  }
+
+  CAMLreturn(result);
+}
+
+extern CAMLprim
+value socket_receive_nowait(value caml_socket) 
+{
+  CAMLparam1(caml_socket);
+  CAMLlocal2(caml_res,caml_msg);
+
+  void* socket = get_handler(caml_socket);
+  zmq_msg_t msg;
+  zmq_msg_init (&msg);
+  if (-1 == zmq_recvmsg (socket, &msg, ZMQ_DONTWAIT)) {
+    zmq_msg_close (&msg);
+    if (errno == EAGAIN) {
+      caml_res = Val_int(0); // None
+    } else {
+      RAISE("receive failed (%s)", zmq_strerror(errno));
+    }
+  } else {
+    size_t len = zmq_msg_size(&msg);
+    caml_msg = caml_alloc_string(len);
+    memcpy(String_val(caml_msg), zmq_msg_data(&msg), len);
+
+    caml_res = caml_alloc(1,0); // Some(str);
+    Store_field(caml_res, 0, caml_msg);
+
+    zmq_msg_close (&msg);
+  }
+
+  CAMLreturn(caml_res);
+}
+
+extern CAMLprim
+value socket_send_multiparts_nowait(value caml_socket, value caml_parts)
+{
+  CAMLparam2(caml_socket, caml_parts);
+  CAMLlocal2(caml_msg, result);
+  
+  int nothing_sent = 1;
+  void* socket = get_handler(caml_socket);
+  while (caml_parts != Val_emptylist) {
+    caml_msg = Field(caml_parts, 0);
+    caml_parts = Field(caml_parts, 1);
+
+    void* buf = String_val(caml_msg);
+    size_t len = caml_string_length(caml_msg);
+    int last = caml_parts == Val_emptylist;
+
+    if (-1 == zmq_send(socket, buf, len, ZMQ_DONTWAIT | (last?0:ZMQ_SNDMORE))) {
+      if (errno == EAGAIN && nothing_sent) {
+        break;
+      } else {
+        RAISE("send failed (%s)", zmq_strerror(errno));
+      }
+    }
+    nothing_sent = 0;
+  }
+
+  result = nothing_sent ? Val_false : Val_true;
+  CAMLreturn(result);
+}
+
+extern CAMLprim
+value socket_receive_multiparts_nowait(value caml_socket) 
+{
+  CAMLparam1(caml_socket);
+  CAMLlocal3(caml_parts,caml_lastpart,caml_msg);
+
+  void* socket = get_handler(caml_socket);
+
+  caml_parts = Val_emptylist;
+  caml_lastpart = caml_parts;
+
+  int expect_more = 1;
+  size_t more_size = sizeof(expect_more);
+  while(expect_more) {
+    zmq_msg_t msg;
+    zmq_msg_init (&msg);
+    if (-1 == zmq_recvmsg (socket, &msg, ZMQ_DONTWAIT)) {
+      zmq_msg_close (&msg);
+      if (errno == EAGAIN && caml_parts == Val_emptylist) {
+        break;
+      } else {
+        RAISE("receive failed (%s)", zmq_strerror(errno));
+      }
+    }
+
+    size_t len = zmq_msg_size(&msg);
+    caml_msg = caml_alloc_string(len);
+    memcpy(String_val(caml_msg), zmq_msg_data(&msg), len);
+
+    if (caml_parts == Val_emptylist) {
+       // first cons
+       caml_parts = caml_alloc(2,0);
+       caml_lastpart = caml_parts;
+    }
+    Store_field(caml_lastpart, 0, caml_msg);
+    zmq_msg_close (&msg);
+
+    zmq_getsockopt (socket, ZMQ_RCVMORE, &expect_more, &more_size);
+    if (expect_more) {
+      Store_field(caml_lastpart, 1, caml_alloc(2,0)); // new cons
+      caml_lastpart = Field(caml_lastpart, 1);
+    }
+  }
+  if (caml_lastpart != Val_emptylist) {
+     Store_field(caml_lastpart, 1, Val_emptylist);
+  }
+
+  CAMLreturn(caml_parts);
+}
+
+extern CAMLprim
 value get_int_option(value caml_opt, value caml_socket)
 {
   CAMLparam2(caml_opt, caml_socket);

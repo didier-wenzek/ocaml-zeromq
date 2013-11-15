@@ -19,6 +19,14 @@ let _ =
   Zmq.send_multiparts push ["Hello"; "world"; "!"];
   assert (Zmq.receive_multiparts pull = ["Hello"; "world"; "!"]);
 
+  (* send and receive messages unless this would block  *)
+  assert (Zmq.send_nowait push "Hello world!");
+  assert (Zmq.receive_nowait pull = Some "Hello world!");
+  assert (Zmq.receive_nowait pull = None);
+  assert (Zmq.send_multiparts_nowait push ["Hello"; "world"; "!"]);
+  assert (Zmq.receive_multiparts_nowait pull = ["Hello"; "world"; "!"]);
+  assert (Zmq.receive_multiparts_nowait pull = []);
+
   (* close sockets and term *)
   Zmq.close push;
   Zmq.close pull;
