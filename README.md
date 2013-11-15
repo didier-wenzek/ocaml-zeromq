@@ -26,7 +26,7 @@ Usage
     #load "zmq.cma";;
 
     (* create a zmq context *)
-    let ctx = Zmq.init ();;
+    let ctx = Zmq.ctx_new ();;
 
     (* create sockets *)
     let push = Zmq.socket ctx Zmq.PUSH;;
@@ -48,5 +48,5 @@ Usage
     Zmq.close push;;
     Zmq.close pull;;
 
-    Zmq.term ctx;;
+    Zmq.ctx_destroy ctx;;
 

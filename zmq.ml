@@ -36,9 +36,11 @@ type socket_type =
 
 external version: unit -> int*int*int = "caml_zmq_version"
 
-external context: int -> int -> context = "caml_zmq_init"
-external term: context -> unit = "caml_zmq_term"
-let init ?(io_threads = 1) ?(max_sockets = 1024) () = context io_threads max_sockets
+external zmq_init: int -> int -> context = "caml_zmq_init"
+let ctx_new ?(io_threads = 1) ?(max_sockets = 1024) () = zmq_init io_threads max_sockets
+external ctx_destroy: context -> unit = "caml_zmq_term"
+let init = ctx_new
+let term = ctx_destroy 
 
 external socket: context -> socket_type -> socket = "socket_new"
 external close: socket -> unit = "socket_close"

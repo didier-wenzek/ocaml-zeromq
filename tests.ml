@@ -1,7 +1,7 @@
 let _ =
   
   (* create a zmq context *)
-  let ctx = Zmq.init () in
+  let ctx = Zmq.ctx_new () in
 
   (* create sockets *)
   let push = Zmq.socket ctx Zmq.PUSH in
@@ -23,4 +23,4 @@ let _ =
   Zmq.close push;
   Zmq.close pull;
 
-  Zmq.term ctx
+  Zmq.ctx_destroy ctx

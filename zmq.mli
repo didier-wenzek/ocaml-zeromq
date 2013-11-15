@@ -15,8 +15,10 @@ type socket_type =
 
 external version: unit -> int*int*int = "caml_zmq_version"
 
-     val init: ?io_threads:int -> ?max_sockets:int -> unit -> context
-external term: context -> unit = "caml_zmq_term"
+     val ctx_new: ?io_threads:int -> ?max_sockets:int -> unit -> context
+external ctx_destroy: context -> unit = "caml_zmq_term"
+     val init: ?io_threads:int -> ?max_sockets:int -> unit -> context (* = ctx_new *)
+     val term: context -> unit (* = ctx_destroy *)
 
 external socket: context -> socket_type -> socket = "socket_new"
 external close: socket -> unit = "socket_close"
