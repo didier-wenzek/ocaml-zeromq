@@ -1,7 +1,7 @@
 OCaml bindings for ZeroMQ
 ====================================
 Merge of :
-* [pdhborges/ocaml-zmq](https://github.com/pdhborges/ocaml-zmq)
+* [issuu/ocaml-zmq](https://github.com/issuu/ocaml-zmq)
 * [bashi-bazouk/Caravan](https://github.com/bashi-bazouk/Caravan)
 
 Pre-requisites
