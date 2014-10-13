@@ -40,6 +40,13 @@ external receive_multiparts_nowait: socket -> string list = "socket_receive_mult
 val subscribe:  socket -> string -> unit
 val unsubscribe:  socket -> string -> unit
 
+type poll_array
+type poll_event = POLLIN | POLLOUT | POLLIN_POLLOUT
+
+external group: (socket*poll_event) list -> poll_array = "caml_zmq_poll_group"
+     val poll: ?timeout_ms:int -> poll_array -> int
+external fired: poll_array -> socket -> poll_event -> bool = "caml_zmq_poll_fired"
+
 type 'a socket_option
 val get_socket_option: 'a socket_option -> socket -> 'a
 val set_socket_option: 'a socket_option -> socket -> 'a -> unit

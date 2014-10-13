@@ -58,6 +58,14 @@ external receive_nowait: socket -> string option = "socket_receive_nowait"
 external send_multiparts_nowait: socket -> string list -> bool = "socket_send_multiparts_nowait"
 external receive_multiparts_nowait: socket -> string list = "socket_receive_multiparts_nowait"
 
+type poll_array
+type poll_event = POLLIN | POLLOUT | POLLIN_POLLOUT
+
+external group: (socket*poll_event) list -> poll_array = "caml_zmq_poll_group"
+external zmq_poll: poll_array -> int -> int = "caml_zmq_poll"
+let poll ?(timeout_ms = -1) group = zmq_poll group timeout_ms
+external fired: poll_array -> socket -> poll_event -> bool = "caml_zmq_poll_fired"
+
 type sock_opt =
   | ZMQ_TYPE
   | ZMQ_RCVMORE

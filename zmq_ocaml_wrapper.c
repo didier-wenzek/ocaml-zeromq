@@ -24,6 +24,13 @@ static int const SOCKET_TYPES[] = {
   ZMQ_PAIR
 };
 
+/* Must be synchronized with Zmq.poll_event. */
+static int const POLL_EVENTS[] = {
+  ZMQ_POLLIN,
+  ZMQ_POLLOUT,
+  ZMQ_POLLIN | ZMQ_POLLOUT
+};
+
 /* Must be synchronized with Zmq.sock_opt. */
 static int const SOCKET_OPTS[] = {
   ZMQ_TYPE,
@@ -646,3 +653,84 @@ value set_bool_option(value caml_opt, value caml_socket, value caml_val)
   CAMLreturn(Val_unit);
 }
 
+typedef struct poll_array {
+  int            item_count;
+  zmq_pollitem_t items[];
+} poll_array_t;
+
+
+extern CAMLprim
+value caml_zmq_poll_group(value caml_socket_event_list)
+{
+  CAMLparam1(caml_socket_event_list);
+  CAMLlocal3(result, caml_item, caml_socket_event);
+
+  int item_count = 0;
+  caml_item = caml_socket_event_list;
+  while (caml_item != Val_emptylist) {
+     item_count ++;
+     caml_item = Field(caml_item, 1);
+  }
+
+  poll_array_t* array = malloc(sizeof(poll_array_t) + item_count * sizeof(zmq_pollitem_t));
+  array->item_count = item_count;
+
+  zmq_pollitem_t* items = array->items;
+  caml_item = caml_socket_event_list;
+  while (caml_item != Val_emptylist) {
+    caml_socket_event = Field(caml_item, 0);
+    caml_item = Field(caml_item, 1);
+
+    void* socket = get_handler(Field(caml_socket_event,0));
+    int events = POLL_EVENTS[Int_val(Field(caml_socket_event,1))];
+
+    items->socket = socket;
+    items->events = events;
+    ++items;
+  }
+
+  result = alloc_caml_handler(array);
+  CAMLreturn(result);
+}
+
+extern CAMLprim
+value caml_zmq_poll(value caml_poll_array, value caml_timeout)
+{
+  CAMLparam2(caml_poll_array, caml_timeout);
+  CAMLlocal1(result);
+  
+  poll_array_t* array = get_handler(caml_poll_array);
+  int timeout = Int_val(caml_timeout);
+
+  int count = zmq_poll(array->items, array->item_count, timeout);
+  if (count == -1) {
+    RAISE("poll failed (%s)", zmq_strerror(errno));
+  }
+
+  result =  Val_int(count);
+  CAMLreturn(result);
+}
+
+extern CAMLprim
+value caml_zmq_poll_fired(value caml_poll_array, value caml_socket, value caml_event)
+{
+  CAMLparam3(caml_poll_array, caml_socket, caml_event);
+  CAMLlocal1(result);
+
+  poll_array_t* array = get_handler(caml_poll_array);
+  void* socket = get_handler(caml_socket);
+  int events = POLL_EVENTS[Int_val(caml_event)];
+
+  int i = 0;
+  int n = array->item_count;
+  result = Val_false;
+  for (; i<n; ++i) {
+    if (array->items[i].socket == socket) {
+      int revents = array->items[i].revents;
+      result = ((events & revents) == events) ? Val_true : Val_false;
+      break;
+    }
+  }
+
+  CAMLreturn(result);
+}
