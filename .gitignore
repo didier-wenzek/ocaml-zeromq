@@ -1,11 +1,4 @@
-*.swp
-*.so
-*.a
-*.cma
-*.cmi
-*.cmo
-*.cmx
-*.cmxa
-*.o
-*.ipc
-*.exe
+_build
+*.native
+*.byte
+*.docdir

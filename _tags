@@ -1,0 +1,6 @@
+<libozmqw.a>: use_zeromq
+<ozmq.cma>: use_zeromq, use_libozmqw
+<ozmq.cmxa>: use_zeromq, use_libozmqw
+<ozmq.cmxs>: use_zeromq, link_libozmqw
+<tests.native> : use_ozmq, use_zeromq
+<tests.byte> : use_ozmq, use_zeromq

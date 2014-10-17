@@ -1,0 +1,7 @@
+name="ozmq"
+version="0.1.0"
+description="OCaml bindings for ZeroMQ"
+requires=""
+archive(byte) = "ozmq.cma"
+archive(native) = "ozmq.cmxa"
+
