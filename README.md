@@ -16,13 +16,14 @@ GNU General Public License.
 Install
 -------
     $ make
-    $ make test
-    $ make install
+    $ make tests
+    $ make install  # using ocamlfind
 
 Usage
 -----
 
-    #load "ozmq.cma";;
+    #use "topfind";;
+    #require "ozmq";;
 
     (* create a zmq context *)
     let ctx = Zmq.ctx_new ();;
