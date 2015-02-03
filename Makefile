@@ -1,4 +1,4 @@
-TARGETS = ozmq.cma ozmq.cmxa ozmq.cmxs dllozmqw.so zmq.cmi zmq.cma zmq.cmx
+TARGETS = ozmq.cma ozmq.cmxa ozmq.cmxs ozmq.a libozmqw.a dllozmqw.so zmq.cmi zmq.cma zmq.cmx
 LIB = $(addprefix _build/, $(TARGETS))
 
 all:
